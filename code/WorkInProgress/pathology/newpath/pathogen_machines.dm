@@ -1541,6 +1541,197 @@
 			for (var/mob/M in range(7))
 				boutput(M, "<span style=\"color:blue\">The machine steams up and begins cleaning.</span>")
 
+/obj/machinery/incubator/
+	name = "Pathogen refrigerator"
+	density = 1
+	anchored = 1
+	icon = 'icons/obj/chemical.dmi'
+	icon_state = "heater"
+	flags = NOSPLASH
+	mats = 15
+	power_usage = 50
+	var/obj/beaker = null
+	var/active = 0
+	var/target_temp = T0C
+	var/list/stored_dishes = list()
+	var/static/image/icon_beaker = image('icons/obj/chemical.dmi', "incubator-dish")
+
+	attackby(var/obj/item/reagent_containers/glass/petridish/O as obj, var/mob/user as mob)
+
+		if (stat & (NOPOWER|BROKEN))
+			user.show_text("[src] seems to be out of order.", "red")
+			return
+
+		if (stored_dishes.len < 4)
+			src.visible_message("<span style=\"color:blue\">[user] adds a dish to the refrigerator. [stored_dishes.len].</span>")
+		else
+			boutput(user, "The machine is full.")
+			return
+
+
+		if(istype(user,/mob/living/silicon/robot/))
+			boutput(user, "Your robotic hands cannot handle the delicate samples safely.")
+			return
+		else
+			stored_dishes += O
+			user.drop_item()
+			O.growing = FALSE
+			O.set_loc(src)
+			boutput(user, "You add the dish to the incubator.")
+			src.updateUsrDialog()
+			src.update_icon()
+
+
+	ex_act(severity)
+		switch(severity)
+			if(1.0)
+				qdel(src)
+				return
+			if(2.0)
+				if (prob(50))
+					qdel(src)
+					return
+
+	blob_act(var/power)
+		if (prob(25 * power/20))
+			qdel(src)
+
+	meteorhit()
+		qdel(src)
+		return
+
+	Topic(href, href_list)
+		if(stat & (NOPOWER|BROKEN)) return
+		if(usr.stat || usr.restrained()) return
+		if(!in_range(src, usr)) return
+
+		usr.machine = src
+		if (!stored_dishes) return
+
+		if (href_list["eject"])
+			for(var/obj/item/reagent_containers/glass/petridish/dish in stored_dishes)
+				dish.set_loc(get_turf(src))
+				stored_dishes -= dish
+				dish.growing = TRUE
+			src.update_icon()
+			src.updateUsrDialog()
+			return
+
+		else if (href_list["stop"])
+			active = 0
+			src.update_icon()
+			src.updateUsrDialog()
+			return
+
+		else if (href_list["start"])
+			active = 1
+			active()
+			src.update_icon()
+			src.updateUsrDialog()
+			return
+
+		else
+			usr << browse(null, "window=chem_heater")
+			src.update_icon()
+			src.updateUsrDialog()
+			return
+
+		src.update_icon()
+		src.updateUsrDialog()
+		src.add_fingerprint(usr)
+		return
+
+	attack_ai(mob/user as mob)
+		return src.attack_hand(user)
+
+	attack_hand(mob/user as mob)
+		if(stat & (NOPOWER|BROKEN))
+			return
+		user.machine = src
+		var/dat = ""
+
+		if(!stored_dishes.len)
+			dat += "Please insert beaker.<BR>"
+		else
+			dat += "Stored dishes: [stored_dishes.len]<BR>"
+			for(var/obj/item/reagent_containers/glass/petridish/dish in stored_dishes)
+				if (dish.reagents.reagent_list["pathogen"])
+					dat += "This dish contains the following pathogens: "
+					var/list/path_list = dish.reagents.aggregate_pathogens()
+					var/path_index = 0
+					for (var/uid in path_list)
+						path_index++
+						if (path_index == path_list.len)
+							dat += "[path_list[uid].desc], item [path_list.Find(path_list[uid])]"
+						else
+							dat += "[path_list[uid].desc], "
+					dat += ".<BR>"
+				else
+					dat += "Empty dish<BR>"
+			dat += "<A href='?src=\ref[src];eject=1'>Eject all dishes</A><BR><BR>"
+
+
+
+			if(active)
+				dat += "Status: Active <BR>"
+				dat += "<A href='?src=\ref[src];stop=1'>Deactivate</A><BR><BR>"
+			else
+				dat += "Status: Inactive<BR>"
+				dat += "<A href='?src=\ref[src];start=1'>Activate</A><BR><BR>"
+
+
+
+		user << browse("<TITLE>Reagent Heating/Cooling Unit</TITLE>Reagent Heating/Cooling Unit:<BR><BR>[dat]", "window=chem_heater")
+
+
+		onclose(user, "chem_heater")
+		return
+
+
+	proc/active()
+		if(!active) return
+		if (stat & (NOPOWER|BROKEN))
+			src.power_usage = 50
+			active = 0
+			return
+		if(!stored_dishes)
+			src.power_usage = 50
+			active = 0
+			return
+
+
+		src.updateUsrDialog()
+
+		spawn(10) active()
+
+
+	power_change()
+		if(!powered())
+			for(var/obj/item/reagent_containers/glass/petridish/dish in stored_dishes)
+				dish.growing = 1
+		else
+			for(var/obj/item/reagent_containers/glass/petridish/dish in stored_dishes)
+				dish.growing = 0
+
+
+
+	proc/update_icon()
+		src.overlays -= src.icon_beaker
+		if (stored_dishes.len)
+			src.overlays += src.icon_beaker
+			if (src.active)
+				src.icon_state = "heater"
+			else
+				src.icon_state = "heater"
+		else
+			src.icon_state = "heater"
+
+
+
+
+
+
+
 /obj/machinery/vending/pathology
 	name = "Path-o-Matic"
 	desc = "Pathology equipment dispenser."

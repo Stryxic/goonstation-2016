@@ -43,6 +43,7 @@
 	var/dirty_reason = ""
 	var/datum/reagent/medium = null
 	var/list/nutrition = list()
+	var/growing = TRUE
 
 	var/ctime = 8
 	var/starving = 5
@@ -99,6 +100,8 @@
 	process()
 		if (dirty && (src in processing_items))
 			processing_items -= src
+		if (!growing)
+			return
 		ctime--
 		if (!src.reagents.reagent_list["pathogen"] )
 			set_dirty("All viable pathogen has been harvested from the petri dish.")
