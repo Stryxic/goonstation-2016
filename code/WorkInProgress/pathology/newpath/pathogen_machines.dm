@@ -1556,6 +1556,7 @@
 	var/list/stored_dishes = list()
 	var/obj/item/reagent_containers/glass/petridish/eject_dish = null
 	var/static/image/icon_beaker = image('icons/obj/chemical.dmi', "heater-beaker")
+	var/chui/window/chem/chems
 
 	attackby(var/obj/item/reagent_containers/glass/petridish/O as obj, var/mob/user as mob)
 
@@ -1660,6 +1661,9 @@
 			return
 		user.machine = src
 		var/dat = ""
+		//chems.Subscribe( user )
+
+		/*
 
 
 		if(!stored_dishes.len)
@@ -1698,6 +1702,7 @@
 
 		user << browse("<TITLE>Pathogen Refrigerator</TITLE>Samples:<BR><BR>[dat]", "window=chem_heater")
 
+		*/
 
 		onclose(user, "chem_heater")
 		return
