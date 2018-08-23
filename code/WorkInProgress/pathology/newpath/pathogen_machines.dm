@@ -1660,7 +1660,7 @@
 		if(stat & (NOPOWER|BROKEN))
 			return
 		user.machine = src
-		var/dat = ""
+		//var/dat = ""
 		//chems.Subscribe( user )
 
 		/*
