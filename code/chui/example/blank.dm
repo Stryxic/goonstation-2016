@@ -27,13 +27,13 @@ chui/window/blank_page
 
 		return generated
 
-var/global/chui/window/blank_page/blank_page
+//var/global/chui/window/blank_page/blank_page
 
-world/New()
-	.=..()
-	blank_page = new
+//world/New()
+	//.=..()
+	//blank_page = new
 
-client/verb/blank_page()
+/*client/verb/blank_page()
 	set name = "Blank page"
 	set category = "chui"
 	var/datum/pathogen/P = unpool(/datum/pathogen)
@@ -45,3 +45,5 @@ client/verb/blank_page()
 		blank_page.Unsubscribe( src )
 	else
 		blank_page.Subscribe( src )
+
+*/

@@ -1546,7 +1546,7 @@
 	density = 1
 	anchored = 1
 	icon = 'icons/obj/pathology.dmi'
-	icon_state = "autoclave"
+	icon_state = "fridgeoff"
 	flags = NOSPLASH
 	mats = 15
 	power_usage = 50
@@ -1557,8 +1557,12 @@
 	var/obj/item/reagent_containers/glass/petridish/eject_dish = null
 	var/static/image/icon_beaker = image('icons/obj/chemical.dmi', "heater-beaker")
 	var/chui/window/chem/chems
+	var/chui/window/blank_page/blank_page
+	var/page_made = FALSE
+
 
 	attackby(var/obj/item/reagent_containers/glass/petridish/O as obj, var/mob/user as mob)
+
 
 		if (stat & (NOPOWER|BROKEN))
 			user.show_text("[src] seems to be out of order.", "red")
@@ -1660,8 +1664,19 @@
 		if(stat & (NOPOWER|BROKEN))
 			return
 		user.machine = src
+		if (!page_made)
+			blank_page = new
+			page_made = TRUE
+
+		var/datum/pathogen/P = unpool(/datum/pathogen)
+		P.create_weak()
+		blank_page.QA = P		
+		blank_page.Subscribe( user )
+
+
+
 		//var/dat = ""
-		//chems.Subscribe( user )
+		//chems.Subscribe( user )s
 
 		/*
 
@@ -1704,7 +1719,7 @@
 
 		*/
 
-		onclose(user, "chem_heater")
+		//onclose(user, "chem_heater")
 		return
 
 
@@ -1746,6 +1761,37 @@
 		else
 			src.icon_state = "autoclave"
 
+
+
+//Path refrigerator UI
+
+chui/window/blank_page
+	//var/datum/pathogen/patho = new
+	//patho = new
+	var/global/list/CHEMSA = list( "Aluminium", "Bromine", "Copper", "Sugar", "Water")
+	var/datum/pathogen/QA
+	var/list/chemsa = list()
+	name = "Blank Page"
+
+	New()
+		..()
+	OnClick( var/client/who, var/id )
+		if( !(id in CHEMSA))
+			return//??
+		if( isnull( chemsa[ id ] ) )
+			chemsa[ id ] = 0
+		chemsa[ id ] += 10
+	OnTopic( href, href_list[] )
+		switch( href_list[ "action" ] )
+			if( "remove" )
+				chemsa[href_list[ "chem" ]] = null
+
+	GetBody()
+		var/generated = ""
+		for( var/i = 1, i <= CHEMSA.len, i++ )
+			generated += theme.generateButton( "Button", QA.desc ) + "<br/>"
+
+		return generated
 
 
 
