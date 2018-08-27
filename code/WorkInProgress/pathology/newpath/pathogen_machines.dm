@@ -1556,9 +1556,20 @@
 	var/list/stored_dishes = list()
 	var/obj/item/reagent_containers/glass/petridish/eject_dish = null
 	var/static/image/icon_beaker = image('icons/obj/chemical.dmi', "heater-beaker")
-	var/chui/window/chem/chems
-	var/chui/window/blank_page/blank_page
+	var/static/image/icon_door_close = image ('icons/obj/pathology.dmi', "fridgecloseddoor")
+	var/static/image/icon_door_open = image ('icons/obj/pathology.dmi', "fridgeopendoor")
+	//var/chui/window/blank_page/blank_page
 	var/page_made = FALSE
+	var/datum/pathogen/P
+
+
+	New()
+		..()
+		P = unpool(/datum/pathogen)
+		P.create_weak()
+
+
+
 
 
 	attackby(var/obj/item/reagent_containers/glass/petridish/O as obj, var/mob/user as mob)
@@ -1661,66 +1672,14 @@
 		return src.attack_hand(user)
 
 	attack_hand(mob/user as mob)
+		var/chui/window/blank_page/blank_page
+		blank_page = new
 		if(stat & (NOPOWER|BROKEN))
 			return
 		user.machine = src
-		if (!page_made)
-			blank_page = new
-			page_made = TRUE
 
-		var/datum/pathogen/P = unpool(/datum/pathogen)
-		P.create_weak()
-		blank_page.QA = P		
+		blank_page.chemsa = stored_dishes
 		blank_page.Subscribe( user )
-
-
-
-		//var/dat = ""
-		//chems.Subscribe( user )s
-
-		/*
-
-
-		if(!stored_dishes.len)
-			dat += "Please insert beaker.<BR>"
-			world << "No dishes loaded!"
-		else
-			dat += "Stored dishes: [stored_dishes.len]<BR><BR>"
-			var/dish_index = 0
-			for(var/obj/item/reagent_containers/glass/petridish/dish in stored_dishes)
-				dish_index++
-				if (dish.reagents.reagent_list["pathogen"])
-					dat += "This dish contains the following pathogens: "
-					var/list/path_list = dish.reagents.aggregate_pathogens()
-					var/path_index = 0
-					for (var/uid in path_list)
-						path_index++
-						if (path_index == path_list.len)
-							dat += "[path_list[uid].desc]"
-						else
-							dat += "[path_list[uid].desc], "
-					dat += ". <A href='?src=\ref[src];eject=1&index=[dish_index]'>Eject</A><<BR><BR>"
-				else
-					dat += "Empty dish<BR>"
-			dat += "<A href='?src=\ref[src];eject_all=1'>Eject all dishes</A><BR><BR>"
-
-
-
-			if(active)
-				dat += "Status: Active <BR>"
-				dat += "<A href='?src=\ref[src];stop=1'>Deactivate</A><BR><BR>"
-			else
-				dat += "Status: Inactive<BR>"
-				dat += "<A href='?src=\ref[src];start=1'>Activate</A><BR><BR>"
-
-
-
-		user << browse("<TITLE>Pathogen Refrigerator</TITLE>Samples:<BR><BR>[dat]", "window=chem_heater")
-
-		*/
-
-		//onclose(user, "chem_heater")
-		return
 
 
 	proc/active()
@@ -1749,32 +1708,35 @@
 				dish.growing = 0
 
 
-
 	proc/update_icon()
-		src.overlays -= src.icon_beaker
+		src.overlays -= src.icon_door_open
+		src.overlays -= src.icon_door_close
 		if (stored_dishes.len)
-			src.overlays += src.icon_beaker
+			src.overlays += src.icon_door_open
 			if (src.active)
-				src.icon_state = "autoclave"
+				src.icon_state = "fridgeonfull"
 			else
-				src.icon_state = "autoclave"
+				src.icon_state = "fridgeofffull"
 		else
-			src.icon_state = "autoclave"
+			src.overlays += src.icon_door_close
+			if (src.active)
+				src.icon_state = "fridgeon"
+			else
+				src.icon_state = "fridgeoff"
 
 
 
 //Path refrigerator UI
 
 chui/window/blank_page
-	//var/datum/pathogen/patho = new
-	//patho = new
 	var/global/list/CHEMSA = list( "Aluminium", "Bromine", "Copper", "Sugar", "Water")
 	var/datum/pathogen/QA
 	var/list/chemsa = list()
 	name = "Blank Page"
 
-	New()
-		..()
+	//New()
+	//	..()
+
 	OnClick( var/client/who, var/id )
 		if( !(id in CHEMSA))
 			return//??
@@ -1788,8 +1750,18 @@ chui/window/blank_page
 
 	GetBody()
 		var/generated = ""
-		for( var/i = 1, i <= CHEMSA.len, i++ )
-			generated += theme.generateButton( "Button", QA.desc ) + "<br/>"
+		for(var/obj/item/reagent_containers/glass/petridish/dish in chemsa)
+			var/list/path_list = dish.reagents.aggregate_pathogens()
+			var/strains = ""
+			for (var/uid in path_list)
+				strains += "[path_list[uid].name] "
+
+			if (strains == "")
+				strains = "Empty Dish"
+
+			generated += theme.generateButton( "strain-[strains]", strains ) + "<br/>"
+
+		//generated += theme.generateButton ("eject-all", Eject All) + "<br/>"
 
 		return generated
 
